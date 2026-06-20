@@ -1,0 +1,21 @@
+# OS/editor files
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.pid
+
+# Build/package output
+dist/
+build/
+
+# Local test sandboxes
+.tmp/
+tmp/
