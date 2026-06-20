@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  shell:
+    name: Shell checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install check tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck tmux
+
+      - name: Bash syntax check
+        run: |
+          bash -n install.sh
+          bash -n bin/ttldr
+
+      - name: ShellCheck
+        run: shellcheck install.sh bin/ttldr
+
+      - name: Installer smoke test
+        run: |
+          set -euo pipefail
+          export TERM=xterm-256color
+          tmp_home="$(mktemp -d)"
+          trap 'rm -rf "$tmp_home"' EXIT
+
+          HOME="$tmp_home" TMUX= ./install.sh
+          test -x "$tmp_home/.local/bin/ttldr"
+          grep -F '# BEGIN Ttldr' "$tmp_home/.tmux.conf"
+          grep -F "$tmp_home/.local/bin/ttldr" "$tmp_home/.tmux.conf"
+
+          HOME="$tmp_home" TMUX= ./install.sh
+          test "$(grep -c '.local/bin/ttldr' "$tmp_home/.tmux.conf")" -eq 1
+
+          tmux -f "$tmp_home/.tmux.conf" start-server \; display-message -p OK
+
+          HOME="$tmp_home" TMUX= ./install.sh --uninstall
+          test ! -e "$tmp_home/.local/bin/ttldr"
+          test "$(grep -c '.local/bin/ttldr' "$tmp_home/.tmux.conf")" -eq 0
